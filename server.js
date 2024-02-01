@@ -8,10 +8,10 @@ require('dotenv').config();
 const db = knex({
     client: 'pg',
     connection: {
-        connectionString: process.env.DATABASE_URL,
-        ssl: {
+        connectionString: 'postgres://localhost:5432/auctions_palacio',
+        /*ssl: {
             rejectUnauthorized: false
-        }
+        }*/
     }
 })
 
@@ -94,19 +94,6 @@ app.get('/getTotalCurrency/', (req, res) => {
     }
 })
 
-app.get('/profile/', (req, res) => {
-    const { id } = req.body;
-    db.select('*').from('users')
-    .where({id})
-    .then(user => {
-        if(user.length) {
-            res.json(user[0]);
-        } else {
-            res.status(400).json('user not found');
-        }
-    })
-})
-
 app.post('/updateBalance', (req, res) => {
     const { user_id, currency } = req.body;
     const timestamp = new Date();
@@ -129,7 +116,9 @@ app.post('/updateBalance', (req, res) => {
                 updated_at: timestamp   
             })
             .then(updated_user => {
-                res.json('Success updating balance on user ' + user_id)
+                res.json({
+                    message: 'Balance updated successfully',
+                })
             }
             )
         })
@@ -138,71 +127,18 @@ app.post('/updateBalance', (req, res) => {
     }
 })
 
-app.get('/getTransactions/:user_id', (req, res) => {
-    const { user_id } = req.params;
-    var user_transactions = [];
-    var user_name = "";
-    var user_balance = "";
-    var valid_codes = [];
-    db.select('title','amount')
-    .from('transactions')
-    .where('user_id','=' ,user_id)
-    .then(transactions => {
-        user_transactions = transactions;
-    })
-    .then(() => {
-        db.select('name','lastname','balance')
-        .from('users')
-        .where('id','=' ,user_id)
-        .then(user => {
-            user_name = user[0].name + ' ' + user[0].lastname;
-            user_balance = user[0].balance;
-        })
-        .then(() => {
-           db.select("*")
-           .from('valid_codes')
-           .then(db_valid_codes => {
-                valid_codes = db_valid_codes;
-           })
-           .then(() => {
-                res.json({
-                    name: user_name,
-                    balance: user_balance,
-                    transactions: user_transactions,
-                    valid_codes: valid_codes
-                })
-           })
-        }
-        )
-    })
-    .catch(err => res.json("error"+err.message))
-   
-})
-
-app.post('/registerTransaction', (req, res) => {
-    const { user_id, valid_code_id, title, amount } = req.body;
+app.post('/answerQuiz', (req, res) => {
+    const { user_id, currency } = req.body;
     const timestamp = new Date();
 
-    db.transaction(trx => {
-        trx.insert({
-            user_id: user_id,
-            title: title,
-            amount: amount,
-            valid_code_id, valid_code_id,
-            date_time: timestamp
-        })
-        .into('transactions')
-        .then(trx.commit)
-        .catch(trx.rollback)
-    })
-    .then(() => {
-
+    if(user_id == NaN) {
+        return res.status(200).json('Not a user')
+    } else 
+    {
         db.select('balance').from('users')
         .where("id","=",user_id)
         .then(balance => {
-            current_balance = parseInt(balance[0].balance);
-            add_amount = parseInt(amount);
-            new_balance = current_balance + add_amount;
+            new_balance = parseInt(currency) + parseInt(balance[0].balance);
             return new_balance;
         })
         .then(new_balance => {
@@ -210,31 +146,21 @@ app.post('/registerTransaction', (req, res) => {
             .where('id','=',user_id)
             .update({
                 balance: new_balance,
+                quiz_try: false,
                 updated_at: timestamp   
             })
-            .then(() => {
-                res.json('Success updating balance and creating transaction on user ' + user_id)
+            .then(updated_user => {
+                res.json({
+                    message: 'Balance and try updated successfully',
+                })
             }
             )
         })
         .catch(err => res.status(500).json('error updating balance ' + err))
-    })
-    .catch(err => res.status(500).json('error at inserting transaction ' + err))
+
+    }
 })
 
-app.get('/getCodesUsed', (req, res) => {
-
-    const { user_id } = req.body;
-
-    db('transactions')
-    .join('valid_codes', 'transactions.valid_code_id','=','valid_codes.id')
-    .select('valid_codes.code', 'valid_codes.description')
-    .where('transactions.user_id','=',user_id)
-    .then(visitedCodes => {
-        res.json(visitedCodes)
-    })
-    .catch(err => res.status(500).json('Error while getting user visited codes on user ' + user_id + ': ' + err.message))
-})
 
 app.get('/getUsersInfo', (req, res) => {
     db.select('name','balance','email','id')
@@ -244,13 +170,18 @@ app.get('/getUsersInfo', (req, res) => {
     });
 })
 
-app.get('/getValidCodes', (req, res) => {
+app.get('/getUsersQuizTry', (req, res) => {
+    const { user_id } = req.body;
     db.select('*')
-    .from('valid_codes')
-    .then(codes => {
-        return res.json(codes);
-    })
+    .from('users')
+    .where('id','=',user_id)
+    .then(user => {
+        return res.json({
+            quiz_try: user[0].quiz_try
+        });
+    });
 })
+
 
 app.get('/', (req, res) => {
     res.json('it liveeeees')
