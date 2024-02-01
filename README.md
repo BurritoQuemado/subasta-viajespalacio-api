@@ -1,0 +1,1 @@
+# subasta-stands-api
