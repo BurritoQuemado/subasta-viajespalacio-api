@@ -76,8 +76,8 @@ app.post('/register', (req, res) => {
     .catch(err => res.status(400).json(err))
 })
 
-app.get('/getTotalCurrency/', (req, res) => {
-    const { id } = req.body;
+app.get('/getTotalCurrency/:id', (req, res) => {
+    const { id } = req.params;
 
     if(isNaN(id)) {
         return res.status(400).json('not a user')
@@ -97,14 +97,18 @@ app.get('/getTotalCurrency/', (req, res) => {
 app.get('/getUserData/:id', (req, res) => {
     const { id } = req.params;
 
-    db.select('*').from('users')
-    .where("id", "=", id)
-    .then(user => {
-        res.json({
-            name: user[0].name + ' ' + user[0].lastname,
-            balance: user[0].balance
-        });
-    })
+    if(isNaN(id)) {
+        return res.status(400).json('not a user')
+    } else {
+        db.select('*').from('users')
+        .where("id", "=", id)
+        .then(user => {
+            res.json({
+                name: user[0].name + ' ' + user[0].lastname,
+                balance: user[0].balance
+            });
+        })
+    }
 })
 
 app.post('/updateBalance', (req, res) => {
@@ -183,16 +187,26 @@ app.get('/getUsersInfo', (req, res) => {
     });
 })
 
-app.get('/getUsersQuizTry', (req, res) => {
-    const { user_id } = req.body;
-    db.select('*')
-    .from('users')
-    .where('id','=',user_id)
-    .then(user => {
-        return res.json({
-            quiz_try: user[0].quiz_try
+app.get('/getUsersQuizTry/:user_id', (req, res) => {
+    const { user_id } = req.params;
+
+    if(isNaN(user_id)) {
+        return res.status(400).json('not a user')
+    } else {
+        db.select('*')
+        .from('users')
+        .where('id','=',user_id)
+        .then(user => {
+            if(user.length){
+                return res.json({
+                    quiz_try: user[0].quiz_try
+                });
+            } else {
+                return res.status(400).json('usuario no encontrado')
+            }
         });
-    });
+
+    }
 })
 
 
