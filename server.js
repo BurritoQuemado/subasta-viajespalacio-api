@@ -8,10 +8,10 @@ require('dotenv').config();
 const db = knex({
     client: 'pg',
     connection: {
-        connectionString: 'postgres://localhost:5432/auctions_palacio',
-        /*ssl: {
+        connectionString: process.env.DATABASE_URL,
+        ssl: {
             rejectUnauthorized: false
-        }*/
+        }
     }
 })
 
