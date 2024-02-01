@@ -94,6 +94,19 @@ app.get('/getTotalCurrency/', (req, res) => {
     }
 })
 
+app.get('/getUserData/:id', (req, res) => {
+    const { id } = req.params;
+
+    db.select('*').from('users')
+    .where("id", "=", id)
+    .then(user => {
+        res.json({
+            name: user[0].name + ' ' + user[0].lastname,
+            balance: user[0].balance
+        });
+    })
+})
+
 app.post('/updateBalance', (req, res) => {
     const { user_id, currency } = req.body;
     const timestamp = new Date();
