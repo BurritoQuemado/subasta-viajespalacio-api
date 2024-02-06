@@ -180,7 +180,7 @@ app.post('/answerQuiz', (req, res) => {
 
 
 app.get('/getUsersInfo', (req, res) => {
-    db.select('name','balance','email','id')
+    db.select('name','lastname','balance','email','id','quiz_try')
     .from('users')
     .then(users => {
         return res.json(users);
